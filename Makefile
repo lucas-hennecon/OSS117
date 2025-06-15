@@ -8,13 +8,12 @@ help:
 
 dev-frontend:
 	@echo "Starting frontend development server..."
-	@cd frontend && npm run dev
+	cd frontend && npm install && npm run dev
 
 dev-backend:
 	@echo "Starting backend development server..."
-	@cd backend && uvicorn main:app --reload --port 8000
+	cd backend && uvicorn main:app --reload --port 8000
 
-# Run frontend and backend concurrently
 dev:
 	@echo "Starting both frontend and backend development servers..."
-	@make dev-frontend & make dev-backend 
+	$(MAKE) dev-frontend & $(MAKE) dev-backend

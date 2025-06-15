@@ -1,7 +1,6 @@
 from loguru import logger
 from src.chat.agents.rag.fact_checker import FactChecker
 from src.models.Chat import FactCheckingResponse, fact_checked
-import re
 
 class ChatService:
     def __init__(self):
@@ -22,8 +21,11 @@ class ChatService:
             facts_checked = []
             for fact in answer:
                 facts_checked.append(fact_checked(
-                    fact=fact["fact"],
-                    answer=fact["answer"]
+                    statement=fact["statement"],
+                    explanation=fact["explanation"],
+                    confidence=fact["confidence"],
+                    classification=fact["classification"],
+                    sources=fact["sources"]
                 ))
             return FactCheckingResponse(facts_checked=facts_checked)
             

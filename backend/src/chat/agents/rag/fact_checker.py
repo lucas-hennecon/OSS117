@@ -1,14 +1,15 @@
 from IPython.display import Image, display
+from typing import Any
 from langchain_core.messages import BaseMessage, HumanMessage
 from langgraph.types import Send
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import List
 from src.chat.llms.config import LLMConfig
 from dotenv import load_dotenv
-from src.chat.agents.rag.state import OverallState, FactCheckingState
+from src.chat.agents.rag.state import OverallState, FactCheckingState, FactList, FactCheckLevel
 from smolagents import ToolCallingAgent, InferenceClientModel, WebSearchTool
 import json
-from src.chat.agents.rag.prompts import smolagent_prompt
+from src.chat.agents.rag.prompts import smolagent_prompt, text_to_facts_prompt, classification_prompt
 from loguru import logger
 load_dotenv()
 
@@ -31,12 +32,13 @@ class FactChecker:
             llm_config = LLMConfig()
 
         self.llm = llm_config.to_llm()
-
         self._create_workflow()
 
     def text_to_facts(self, state: OverallState)-> FactCheckingState:
-        # TODO
-        return {"facts": ["Hugging face headquarters is in Lebanon."]}
+        text_to_facts_prompt_formatted = text_to_facts_prompt.format(text=state["messages"][-1].content)
+        facts = self.llm.with_structured_output(FactList).invoke(text_to_facts_prompt_formatted)
+        logger.critical(f"Facts: {facts.facts}")
+        return {"facts": facts.facts}
 
     def run_fact_check(self, fact: str):
         # TO PARALLELIZE !!
@@ -49,29 +51,41 @@ class FactChecker:
             raise ValueError(f"Unexpected type: {type(fact_checked_answer)}")
         return {"facts_checked": fact_checked_answer}
     
+    def classify_level(self, confidence: int):
+        if confidence < 40:
+            return "red"
+        elif confidence < 70:
+            return "yellow"
+        else:
+            return "green"
+        
+    def run_classification(self, fact_checked: dict[str, Any]):
+        classification_prompt_extended = classification_prompt.format(statement=fact_checked["statement"], explanation=fact_checked["explanation"])
+        classification = self.llm.with_structured_output(FactCheckLevel).invoke(classification_prompt_extended)
+
+        return {"confidence": classification.level, "classification": self.classify_level(classification.level)}
 
     def run_fact_checkers(self, state: FactCheckingState) -> OverallState:
         facts_checked = []
         for fact in state["facts"]:
             total_prompt = smolagent_prompt + fact
+            # fact_checked_answer = "Final answer: answer: The claim that Google revenue is 10 dollars is incorrect. According to the latest available data as of 2025, Alphabet (Google's parent company) has a revenue of$359.713B for the twelve months ending March 31, 2025[source][1]. In 2024, Alphabet’s annual revenue was $350.018B, and in 2023, it was $307.394B. These figures indicate that Google’s revenue is significantly higher than 10 dollars."
             fact_checked_answer = self.code_agent.run(total_prompt)
             if isinstance(fact_checked_answer, str):
-                pass
-            else:
-                logger.critical(fact_checked_answer)
-                raise ValueError(f"Unexpected type: {type(fact_checked_answer)}")
-            facts_checked.append({"fact": fact, "answer": fact_checked_answer})
+                fact_to_add = {
+                    "statement": fact,
+                    "explanation": fact_checked_answer,
+                }
+                classification = self.run_classification(fact_to_add)
+                fact_to_add.update(classification)
+                fact_to_add["sources"] = {
+                        "supporting": [],
+                        "contradicting": [],
+                        "nuanced": []
+                    }
+                
+            facts_checked.append(fact_to_add)
         return {"facts_checked": facts_checked}
-        # return [
-        #     Send(
-        #         "fact_check",
-        #         {
-        #             "fact": fact,
-        #         },
-        #     )
-        #     for _, fact in enumerate(state["facts"])
-        # ]
-    
 
 
     def _create_workflow(self):
@@ -88,6 +102,7 @@ class FactChecker:
         # This means that this node is the first one called
         builder.add_edge(START, "text_to_facts")
         builder.add_edge("text_to_facts", "run_fact_checkers")
+        builder.add_edge("run_fact_checkers", END)
         # Finalize the answer
 
         self.workflow = builder

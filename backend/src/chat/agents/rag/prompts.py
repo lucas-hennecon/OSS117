@@ -7,12 +7,18 @@ def get_current_date():
 
 text_to_facts_prompt = """
 You are a fact-checking assistant.
-You are given a text and you need to all the affirmations from it.
-
+You are given a text and you need to extract all the affirmations from it.
 The text is:
 {text}
-
-You have to return a list of facts (that could be true or false).     
+You have to return a list of facts that could be fact-checked publicly.
+Example:
+input text: 
+France is a country in Europe. But the capital of France is Paris. In my late twenties, I had a great time in Paris.
+output:
+[
+    "France is a country in Europe.",
+    "The capital of France is Paris.",
+]
 """
 
 smolagent_prompt = """
@@ -92,4 +98,25 @@ PROBABLY_FALSE: 3+ reliable sources directly contradict the claim OR error >25%
 NOT_VERIFIABLE: You found fewer than 3 relevant sources after 10+ searches
 
 RETURN YOUR FINAL ANSWER AS A STRING.
+"""
+
+
+
+classification_prompt = """
+You are a fact-checking assistant.
+You are given a statement and an explanation that was provided by a fact-checking assistant.
+You need to give a value between 0 and 100 that represents the veracity of the statement.
+0 = Definitely False
+25 = Most likely False
+50 = Can't tell
+75 = Most likely True
+100 = Definitely True
+
+The statement is:
+{statement}
+
+The explanation is:
+{explanation}
+
+The output should be a number between 0 and 100.
 """

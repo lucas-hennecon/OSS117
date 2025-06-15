@@ -4,7 +4,7 @@ from typing import TypedDict, List
 
 from langgraph.graph import add_messages
 from typing_extensions import Annotated
-
+from pydantic import BaseModel
 
 import operator
 from typing_extensions import Annotated
@@ -17,3 +17,9 @@ class OverallState(TypedDict):
 
 class FactCheckingState(TypedDict):
     facts: List[str]
+
+class FactList(BaseModel):
+    facts: List[str]
+
+class FactCheckLevel(BaseModel):
+    level: int

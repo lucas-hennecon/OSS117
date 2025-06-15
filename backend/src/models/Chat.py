@@ -30,8 +30,11 @@ class Conversation(BaseModel):
     
 
 class fact_checked(BaseModel):
-    fact: str
-    answer: str
+    statement: str
+    explanation: str
+    confidence: int
+    classification: Literal["red", "yellow", "green"]
+    sources: dict[str, List[str]]
 
 class FactCheckingResponse(BaseModel):
     facts_checked: List[fact_checked]

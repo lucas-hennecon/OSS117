@@ -1,7 +1,9 @@
 from typing import Literal
 from langchain_mistralai import ChatMistralAI
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_anthropic import ChatAnthropic
 from dotenv import load_dotenv
+import os
 load_dotenv()
 
 LlmSources = Literal["openai", "mistral", "huggingface", "anthropic", "groq", "gemini"]
@@ -9,8 +11,8 @@ LlmSources = Literal["openai", "mistral", "huggingface", "anthropic", "groq", "g
 class LLMConfig:
     def __init__(
             self,
-            source: LlmSources = "gemini",
-            model_name: str = "gemini-2.0-flash",
+            source: LlmSources = "anthropic",
+            model_name: str = "claude-3-7-sonnet-latest",
             temperature: float = 0.0,
             max_retries: int = 2,
             ):
@@ -38,6 +40,13 @@ class LLMConfig:
                     max_tokens=None,
                     timeout=None,
                     max_retries=2,
+                )
+            case "anthropic":
+                llm = ChatAnthropic(
+                    model="claude-3-7-sonnet-latest",
+                    api_key=os.getenv("ANTHROPIC_API_KEY"),
+                    temperature=self.temperature,
+                    max_retries=self.max_retries
                 )
             case _:
                 raise ValueError(f"Source {self.source} not supported")

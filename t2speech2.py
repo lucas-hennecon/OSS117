@@ -10,7 +10,9 @@ load_dotenv()
 api_key = os.getenv("HF_API_KEY")
 
 headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "audio/m4a"}
-API_URL = "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3"
+API_URL = (
+    "https://router.huggingface.co/hf-inference/models/openai/whisper-large-v3-turbo"
+)
 
 
 def query(filename):

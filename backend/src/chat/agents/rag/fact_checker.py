@@ -10,6 +10,7 @@ from src.chat.agents.rag.state import OverallState, FactCheckingState, FactList,
 from smolagents import ToolCallingAgent, InferenceClientModel, WebSearchTool
 import json
 from src.chat.agents.rag.prompts import smolagent_prompt, text_to_facts_prompt, classification_prompt
+from smolagents import LiteLLMModel
 from loguru import logger
 load_dotenv()
 
@@ -19,12 +20,13 @@ class FactChecker:
         self,
         llm_config: LLMConfig | None = None,
     ):
-        model = InferenceClientModel(
-            model_id="Qwen/Qwen3-32B",
-            provider="nebius",
-            token="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",
-            bill_to="agents-hack",
-        )
+        # model = InferenceClientModel(
+        #     model_id="Qwen/Qwen3-32B",
+        #     provider="nebius",
+        #     token="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",
+        #     bill_to="agents-hack",
+        # )
+        model = LiteLLMModel(model_id="claude-3-7-sonnet-latest")
         web_search_tool = WebSearchTool()
         self.code_agent = ToolCallingAgent(tools=[web_search_tool], model=model)
 

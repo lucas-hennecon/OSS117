@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+from pydantic import BaseModel
 from typing import TypedDict, List
 
 from langgraph.graph import add_messages
@@ -16,4 +16,7 @@ class OverallState(TypedDict):
 
 
 class FactCheckingState(TypedDict):
+    facts: List[str]
+
+class FactList(BaseModel):
     facts: List[str]

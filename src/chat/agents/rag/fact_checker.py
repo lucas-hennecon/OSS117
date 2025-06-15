@@ -1,14 +1,13 @@
 from IPython.display import Image, display
 from langchain_core.messages import BaseMessage, HumanMessage
-from langgraph.types import Send
 from langgraph.graph import END, START, StateGraph
 from typing_extensions import List
 from src.chat.llms.config import LLMConfig
 from dotenv import load_dotenv
-from src.chat.agents.rag.state import OverallState, FactCheckingState
+from src.chat.agents.rag.state import OverallState, FactCheckingState, FactList
 from smolagents import ToolCallingAgent, InferenceClientModel, WebSearchTool
 import json
-from src.chat.agents.rag.prompts import smolagent_prompt
+from src.chat.agents.rag.prompts import smolagent_prompt, text_to_facts_prompt
 from loguru import logger
 load_dotenv()
 
@@ -35,8 +34,9 @@ class FactChecker:
         self._create_workflow()
 
     def text_to_facts(self, state: OverallState)-> FactCheckingState:
-        # TODO
-        return {"facts": ["Hugging face headquarters is in Lebanon."]}
+        text_to_facts_prompt_formatted = text_to_facts_prompt.format(text=state["messages"][-1].content)
+        facts = self.llm.with_structured_output(FactList).invoke(text_to_facts_prompt_formatted)
+        return {"facts": facts.facts}
 
     def run_fact_check(self, fact: str):
         # TO PARALLELIZE !!

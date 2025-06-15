@@ -93,3 +93,23 @@ NOT_VERIFIABLE: You found fewer than 3 relevant sources after 10+ searches
 
 RETURN YOUR FINAL ANSWER AS A STRING.
 """
+
+text_to_facts_prompt = """
+You are a fact-checking assistant.
+You are given a text and you need to extract all the affirmations from it.
+
+The text is:
+{text}
+
+You have to return a list of facts that could be fact-checked publicly.
+
+Example:
+input text: 
+France is a country in Europe. But the capital of France is Paris. In my late twenties, I had a great time in Paris.
+
+output:
+[
+    "France is a country in Europe.",
+    "The capital of France is Paris.",
+]
+"""

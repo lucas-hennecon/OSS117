@@ -12,6 +12,8 @@ import json
 from src.chat.agents.rag.prompts import smolagent_prompt, text_to_facts_prompt, classification_prompt
 from smolagents import LiteLLMModel
 from loguru import logger
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 load_dotenv()
 
 
@@ -67,26 +69,88 @@ class FactChecker:
 
         return {"confidence": classification.level, "classification": self.classify_level(classification.level)}
 
+    def _process_single_fact(self, fact: str) -> dict:
+        model = InferenceClientModel(
+            model_id="Qwen/Qwen3-32B",
+            provider="nebius",
+            token="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",
+            bill_to="agents-hack",
+        )
+        web_search_tool = WebSearchTool()
+        code_agent = ToolCallingAgent(tools=[web_search_tool], model=model, **{"max_steps": 3})
+        total_prompt = smolagent_prompt + fact
+        fact_checked_answer = code_agent.run(total_prompt)
+
+
+        summarize_smolagent_prompt = smolagent_prompt + fact + "\n\n" + fact_checked_answer
+        logger.critical(fact_checked_answer)
+        fact_checked_answer = self.llm.invoke(summarize_smolagent_prompt)
+    
+        
+        if isinstance(fact_checked_answer, str):
+            fact_to_add = {
+                "statement": fact,
+                "explanation": fact_checked_answer,
+            }
+            classification = self.run_classification(fact_to_add)
+            fact_to_add.update(classification)
+            fact_to_add["sources"] = {
+                    "supporting": [],
+                    "contradicting": [],
+                    "nuanced": []
+                }
+            return fact_to_add
+        else:
+            logger.critical(fact_checked_answer)
+            # Handle unexpected response type
+            return {
+                "statement": fact,
+                "explanation": "Error processing fact",
+                "confidence": 0,
+                "classification": "red",
+                "sources": {
+                    "supporting": [],
+                    "contradicting": [],
+                    "nuanced": []
+                }
+            }
+
     def run_fact_checkers(self, state: FactCheckingState) -> OverallState:
         facts_checked = []
-        for fact in state["facts"]:
-            total_prompt = smolagent_prompt + fact
-            # fact_checked_answer = "Final answer: answer: The claim that Google revenue is 10 dollars is incorrect. According to the latest available data as of 2025, Alphabet (Google's parent company) has a revenue of$359.713B for the twelve months ending March 31, 2025[source][1]. In 2024, Alphabet’s annual revenue was $350.018B, and in 2023, it was $307.394B. These figures indicate that Google’s revenue is significantly higher than 10 dollars."
-            fact_checked_answer = self.code_agent.run(total_prompt)
-            if isinstance(fact_checked_answer, str):
-                fact_to_add = {
-                    "statement": fact,
-                    "explanation": fact_checked_answer,
-                }
-                classification = self.run_classification(fact_to_add)
-                fact_to_add.update(classification)
-                fact_to_add["sources"] = {
-                        "supporting": [],
-                        "contradicting": [],
-                        "nuanced": []
-                    }
-                
-            facts_checked.append(fact_to_add)
+        
+        # Use ThreadPoolExecutor to parallelize fact processing
+        max_workers = min(len(state["facts"]), 10)  # Limit to 10 concurrent workers
+        
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            logger.critical(f"Running {max_workers} fact checkers")
+            # Submit all facts for processing
+            future_to_fact = {
+                executor.submit(self._process_single_fact, fact): fact 
+                for fact in state["facts"]
+            }
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_fact):
+                fact = future_to_fact[future]
+                try:
+                    result = future.result()
+                    facts_checked.append(result)
+                    logger.debug(f"Completed fact checking for: {fact[:50]}...")
+                except Exception as exc:
+                    logger.error(f"Fact checking failed for '{fact[:50]}...': {exc}")
+                    # Add error result
+                    facts_checked.append({
+                        "statement": fact,
+                        "explanation": f"Error during fact checking: {exc}",
+                        "confidence": 0,
+                        "classification": "red",
+                        "sources": {
+                            "supporting": [],
+                            "contradicting": [],
+                            "nuanced": []
+                        }
+                    })
+        
         return {"facts_checked": facts_checked}
 
 

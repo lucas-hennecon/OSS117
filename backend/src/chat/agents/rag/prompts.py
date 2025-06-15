@@ -19,6 +19,7 @@ output:
     "France is a country in Europe.",
     "The capital of France is Paris.",
 ]
+make a max list of 2 facts.
 """
 
 smolagent_prompt = """

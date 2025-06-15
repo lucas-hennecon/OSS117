@@ -6,10 +6,12 @@ help:
 	@echo "  make dev-backend     - Starts the backend development server (Uvicorn with reload)"
 	@echo "  make dev             - Starts both frontend and backend development servers"
 
+# 8080
 dev-frontend:
 	@echo "Starting frontend development server..."
 	cd frontend && npm install && npm run dev
 
+# 8000
 dev-backend:
 	@echo "Starting backend development server..."
 	cd backend && uvicorn main:app --reload --port 8000

@@ -118,49 +118,56 @@ export default function AudioFactCheck() {
     handleSendAudio(file);
   };
 
-  // Simulate audio transcription + analysis
+  // Envoi du .webm et gestion du parsing backend :
   const handleSendAudio = async (audioBlob: Blob) => {
     setStatus("transcribing");
-    // Replace here by your API call that handles transcription and fact-checking
-    try {
-      setTimeout(() => {
-        // Simulated: text recognized from audio
-        const simulatedText = "Unemployment dropped by 15% this year. CO2 emissions decreased over the past year.";
-        setTranscript(simulatedText);
 
-        setStatus("analyzing");
-        setTimeout(() => {
-          setResults([
-            {
-              statement: "Unemployment dropped by 15% this year",
-              classification: "orange",
-              confidence: 75,
-              summary: "Partially accurate but lacks temporal context",
-              sources: {
-                supporting: ["INSEE Q3 2024", "Employment Agency Stats"],
-                contradicting: ["OECD Report 2024"],
-                nuanced: ["France Strategy Analysis"]
-              },
-              explanation: "The figures are correct but need further precision regarding the period considered."
-            },
-            {
-              statement: "CO2 emissions decreased over the past year.",
-              classification: "green",
-              confidence: 90,
-              summary: "Consistent with the latest environmental reports.",
-              sources: {
-                supporting: ["Ministry of Ecology Report 2024"],
-                contradicting: [],
-                nuanced: ["European Environment Agency Overview"]
-              },
-              explanation: "Recent data supports a decline, though local variations may exist."
-            }
-          ]);
-          setStatus("completed");
-        }, 1500);
-      }, 1750);
-    } catch (e) {
-      setErrorMsg("Error during audio analysis.");
+    const BACKEND_SPEECH_URL = "http://127.0.0.1:8000/api/speech/process-audio/";
+    try {
+      const formData = new FormData();
+      formData.append("file", audioBlob, "audio.webm");
+      setTranscript(null);
+      setErrorMsg(null);
+
+      const resp = await fetch(BACKEND_SPEECH_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `Backend error: ${resp.status}`);
+      }
+      const data = await resp.json();
+
+      // Gestion automatique : transcription / analyse
+      // Cas 1 : le backend répond simplement { text: ... }
+      if (typeof data === "object" && data.text && !data.statement && !data.classification) {
+        setTranscript(data.text);
+        setResults([]);
+        setStatus("completed"); // On "termine" même si c’est juste la transcription
+      }
+      // Cas 2 : le backend répond avec un/des objets d’analyse
+      else if (Array.isArray(data) || (data.statement && data.classification)) {
+        // Normalise. Si c'est un objet direct → on le met dans un array :
+        const resultsArr = Array.isArray(data) ? data : [data];
+        setResults(resultsArr);
+
+        // Transcription si présente dans data :
+        let transcriptText = (data.transcript || (resultsArr[0]?.transcript) || "");
+        // fallback: ignorez les faux vides
+        if (!transcriptText && typeof data === "object" && data.text) transcriptText = data.text;
+        setTranscript(transcriptText || null);
+
+        setStatus("completed");
+      }
+      // Cas réponse inattendue :
+      else {
+        setErrorMsg("Backend response format not recognized.");
+        setStatus("error");
+      }
+    } catch (e: any) {
+      setErrorMsg("Error during audio analysis. " + (e?.message || ""));
       setStatus("error");
     }
   };
@@ -266,12 +273,33 @@ export default function AudioFactCheck() {
                 )}
               </div>
             )}
-            {results.length === 0 && (
-              <div className="text-center py-10">Analysis in progress...</div>
-            )}
-            {results.length > 0 &&
+
+            {/* Si résultats d’analyse, on les affiche joliment via ResultsList */}
+            {results.length > 0 ? (
               <ResultsList results={results} onRetry={handleReset} />
-            }
+            ) : (
+              // Sinon, message sympa (pas de résultats ou juste transcription)
+              <div className="card max-w-2xl w-full p-5 mx-auto my-10 text-sm text-primary-text text-center">
+                <div>
+                  {transcript
+                    ? (
+                      <>
+                        <div className="mb-2"> Transcription :</div>
+                        <div className="italic text-secondary-text mb-5">{transcript}</div>
+                        <div className="text-xs text-muted">Aucune affirmation vérifiable détectée pour l’instant.</div>
+                      </>
+                    )
+                    : <div className="text-muted">No verifiable analysis or transcript detected.</div>
+                  }
+                </div>
+                <Button
+                  onClick={handleReset}
+                  className="mt-6 px-5 py-2 bg-institutional-blue text-white rounded font-medium shadow hover:bg-institutional-blue/90 transition"
+                >
+                  Restart
+                </Button>
+              </div>
+            )}
           </div>
         )}
         {status === "idle" && <EmptyState />}

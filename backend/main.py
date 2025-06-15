@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.controllers import chat_controller
+from src.controllers import speech_controller
 import uvicorn
 
 app = FastAPI(
@@ -20,6 +21,7 @@ app.add_middleware(
 
 # Import and include routers
 app.include_router(chat_controller.router, prefix="/api/chat", tags=["chat"])
+app.include_router(speech_controller.router, prefix="/api/speech", tags=["speech"])
 
 @app.get("/")
 async def root():

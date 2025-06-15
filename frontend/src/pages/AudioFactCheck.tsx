@@ -319,6 +319,15 @@ export default function AudioFactCheck() {
             <div className="animate-pulse text-lg font-medium">🔎 Transcribing and analyzing...</div>
           </div>
         )}
+        {status === "analyzing" && (
+          <div className="card p-6 max-w-xl w-full mx-auto mt-6 text-center">
+            <div className="flex flex-col items-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-institutional-blue mb-3"></div>
+              <div className="text-lg font-medium">🔍 Fact-checking transcript...</div>
+              <div className="text-sm text-secondary-text mt-2">Analyzing statements for accuracy</div>
+            </div>
+          </div>
+        )}
         {/* Display transcription and results */}
         {(status === "analyzing" || status === "completed") && (
           <div className="w-full">
@@ -333,7 +342,7 @@ export default function AudioFactCheck() {
               </div>
             )}
 
-            {/* Si résultats d’analyse, on les affiche joliment via ResultsList */}
+            {/* Si résultats d'analyse, on les affiche joliment via ResultsList */}
             {results.length > 0 ? (
               <ResultsList results={results} onRetry={handleReset} />
             ) : (
@@ -343,9 +352,9 @@ export default function AudioFactCheck() {
                   {transcript
                     ? (
                       <>
-                        <div className="mb-2">✅ Audio transcrit :</div>
+                        <div className="mb-2">Transcription:</div>
                         <div className="italic text-secondary-text mb-5">{transcript}</div>
-                        <div className="text-xs text-muted">Aucune affirmation vérifiable détectée pour l’instant.</div>
+                        <div className="text-xs text-muted">Aucune affirmation vérifiable détectée pour l'instant.</div>
                       </>
                     )
                     : <div className="text-muted">No verifiable analysis or transcript detected.</div>

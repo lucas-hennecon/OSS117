@@ -38,7 +38,9 @@ class FactChecker:
 
     def text_to_facts(self, state: OverallState)-> FactCheckingState:
         text_to_facts_prompt_formatted = text_to_facts_prompt.format(text=state["messages"][-1].content)
+        logger.critical(f"Text to facts prompt: {text_to_facts_prompt_formatted}")
         facts = self.llm.with_structured_output(FactList).invoke(text_to_facts_prompt_formatted)
+        
         logger.critical(f"Facts: {facts.facts}")
         return {"facts": facts.facts}
 

@@ -15,10 +15,8 @@ Example:
 input text: 
 France is a country in Europe. But the capital of France is Paris. In my late twenties, I had a great time in Paris.
 output:
-[
-    "France is a country in Europe.",
-    "The capital of France is Paris.",
-]
+["France is a country in Europe.", "The capital of France is Paris."]
+MAKE SURE TO RETURN A LIST OF FACTS. of strings !!
 """
 
 smolagent_prompt = """

@@ -96,7 +96,7 @@ export default function ResultsList({ results, onRetry }: ResultsListProps) {
                   className="h-2 rounded transition-all duration-300"
                 />
               </div>
-              <div className="text-xs text-secondary-text opacity-80 mb-1">Confidence: {result.confidence}%</div>
+              <div className="text-xs text-secondary-text opacity-80 mb-1">Accuracy score: {result.confidence}/100</div>
             </div>
             <div className="ml-auto flex items-center">
               <span className="text-primary-text opacity-60 text-2xl cursor-pointer transition-transform group-hover:scale-110">

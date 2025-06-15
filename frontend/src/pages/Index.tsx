@@ -1,4 +1,3 @@
-
 import HeaderInstitutionnel from "@/components/HeaderInstitutionnel";
 import AnalyseInput from "@/components/AnalyseInput";
 import EmptyState from "@/components/EmptyState";
@@ -11,9 +10,22 @@ import { useState } from "react";
 
 // Types identiques
 type AgentStatus = "idle" | "analyzing" | "completed" | "error";
-type AnalysisResult = any[]; // Accept any backend result for now
+type AnalysisResult = FactChecked[]; // Accept any backend result for now
 
 const BACKEND_URL = "http://127.0.0.1:8000/api/chat";
+
+type FactChecked = {
+  statement: string;
+  explanation: string;
+  confidence: number;
+  classification: "red" | "orange" | "green" | "grey";
+  summary: string;
+  sources: {
+    supporting: string[];
+    contradicting: string[];
+    nuanced: string[];
+  };
+};
 
 const Index = () => {
   const [status, setStatus] = useState<AgentStatus>("idle");
@@ -51,10 +63,11 @@ const Index = () => {
       }
 
       const data = await resp.json();
+      console.log(data);
 
       setAgentThoughts(thoughts => [...thoughts, "Response received!"]);
-      // Résultat affiché comme tableau pour compatibilité ResultsList (ou à adapter)
-      setResults([data]);
+      // Set results directly from the backend response
+      setResults(data.facts_checked || data);
       setStatus("completed");
     } catch (e: any) {
       setErrorMsg("Analysis failed. " + (e?.message || ""));
@@ -90,16 +103,7 @@ const Index = () => {
           <AnalysisProgress agentThoughts={agentThoughts} />
         )}
         {status === "completed" && (
-          // Simple affichage brut du résultat, à améliorer selon format backend !
-          <div className="card max-w-2xl w-full p-5 mx-auto my-10 text-sm text-primary-text">
-            <pre className="whitespace-pre-wrap break-words">{JSON.stringify(results[0], null, 2)}</pre>
-            <button
-              className="mt-6 px-5 py-2 bg-institutional-blue text-white rounded font-medium shadow hover:bg-institutional-blue/90 transition"
-              onClick={handleReset}
-            >
-              Start a New Analysis
-            </button>
-          </div>
+          <ResultsList results={results} onRetry={handleReset} />
         )}
         <div className="mt-7">
           <a href="/audio" className="inline-block text-institutional-blue hover:underline text-base font-medium">

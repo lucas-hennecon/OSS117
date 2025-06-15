@@ -18,6 +18,20 @@ class ChatService:
         """
         try:
             answer = self.fact_checker.answer_messages([input_text])
+            # Mock data for testing
+            # facts_checked = [
+            #     fact_checked(
+            #         statement="The Earth orbits around the Sun",
+            #         explanation="This is a fundamental astronomical fact that has been well-established through centuries of scientific observation and research.",
+            #         confidence=98,
+            #         classification="green",
+            #         sources={
+            #             "supporting": [],
+            #             "contradicting": [],
+            #             "nuanced": []
+            #         }
+            #     )
+            # ]
             facts_checked = []
             for fact in answer:
                 facts_checked.append(fact_checked(

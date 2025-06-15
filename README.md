@@ -5,7 +5,8 @@
 ## 🚀 Getting Started
 
 Follow these steps to run the project locally
-clone the repo on your machine, then: 
+
+Clone the repo on your machine, then: 
 
 1. **Create a virtual environment**  
    (e.g., with `python -m venv venv`)

@@ -23,11 +23,14 @@ Follow these steps to run the project locally:
    ```bash
    brew install npm
    ```
-
-5. **Launch the app**  
+5. **Launch the app**
+```bash
+   make dev
+   ```
+6. **Test the app**  
    Visit [http://localhost:8080/](http://localhost:8080/) in your browser.
 
-6. **Start fact-checking!**  
+7. **Start fact-checking!**  
    Use the interface to analyze text, audio, or X accounts, and never get fooled again.
 
 ---
